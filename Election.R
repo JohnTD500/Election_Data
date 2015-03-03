@@ -1,5 +1,6 @@
 library(dplyr)
 library(ggplot2)
+library(reshape2)
 setwd("~/R Working Directory/Election_Data")
 
 rm(list=ls())
@@ -9,8 +10,10 @@ cand <- read.table("cn.txt",header = F, sep = "|",comment.char = "",stringsAsFac
 names(cand) <- read.csv("cn_header_file.csv",header = F, stringsAsFactor = F)
 
 #Uploads a data frame of all the individual contributions to committees
-indContr <- read.table("itcont.txt", sep= "|", comment.char = "", stringsAsFactors = F, quote = "")
+indColClasses <- c(rep("character", 4), "numeric", rep("character",5), "numeric", rep("character", 3), "integer", rep("character",6))
+indContr <- read.table("itcont.txt", sep= "|", comment.char = "", stringsAsFactors = F, quote = "", colClasses = indColClasses)
 names(indContr) <- read.csv("indiv_header_file.csv", header = F, stringsAsFactor = F)
+indContr$TRANSACTION_DT <- as.Date(indContr$TRANSACTION_DT,format = "%m%d%Y")
 
 #Uploads the contributions from committees to candidates
 comContr <- read.table("itpas2.txt", sep= "|", comment.char = "", stringsAsFactors = F, quote = "")
@@ -22,23 +25,41 @@ names(committee) <- read.csv("cm_header_file.csv",header = F,stringsAsFactors = 
 
 #Uploads candidate/committee linkage file
 linkage <- read.table("ccl.txt", sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
-names(linkage) <- read.csv("ccl_header_file", header = F, stringsAsFactors = F)
-#names(linkage) <- c("CAND_ID", "CAND_ELECTION_YR", "FEC_ELECTION_YR", "CMTE_ID", "CMTE_TP", "CMTE_DSGN", "LINKAGE_ID")
+names(linkage) <- read.csv("ccl_header_file.csv", header = F, stringsAsFactors = F)
 
 #Uploads change of funds between committees
 cm2cm <- read.table("itoth.txt", sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
 names(cm2cm) <- read.csv("oth_header_file.csv", header = F, comment.char = "", stringsAsFactors = F, quote = "")
 
-candMoney <- cand %>%
-    inner_join(comContr)
+#Select relevent rows from the committee table
+smallCM <- select(committee, CMTE_ID, CMTE_NM, CMTE_PTY_AFFILIATION)
 
-candMoney[, c(2, 3, 5)] <- lapply(candMoney[, c(2,3,5)],function(x) as.factor(x))
-candMoney$ZIP5 <- substr(candMoney$CAND_ZIP,1,5)
+#Gain a view of which committees are giving to which other committees, along with
+#associated political parties
+cmView <- smallCM %>%
+    inner_join(cm2cm, by = c("CMTE_ID" = "CMTE_ID")) %>%
+    inner_join(smallCM, by = c("OTHER_ID" = "CMTE_ID"))
 
-candAg <- candMoney %>%
-    group_by(CAND_PTY_AFFILIATION) %>%
-    summarise(n = n(), Amount = sum(TRANSACTION_AMT))
+#Reshape the data to show how much each committee has contributed to each party
+cmSpending <- dcast(cmView,formula = CMTE_NM.x ~ CMTE_PTY_AFFILIATION.y,
+                value.var = "TRANSACTION_AMT", fun.aggregate = sum)
 
-indCand <- indContr %>%
-    inner_join(comContr, c("CMTE_ID" = "CMTE_ID"),)
+
+indMoney <- smallCM %>%
+    inner_join(indContr, by = c("CMTE_ID" = "CMTE_ID")) %>%
+    filter(TRANSACTION_DT > as.Date("2014-12-31"))
+
+grpMoney <- indMoney %>%
+    group_by(CMTE_PTY_AFFILIATION) %>%
+    arrange(TRANSACTION_DT)
+
+
+grpMoney <- grpMoney %>%
+    mutate(Funds = cumsum(TRANSACTION_AMT))
+
+repdem <- grpMoney[grpMoney$CMTE_PTY_AFFILIATION == "REP" | grpMoney$CMTE_PTY_AFFILIATION == "DEM",]
+
+ggplot(repdem, aes(x = TRANSACTION_DT, y = Funds)) +
+    geom_line(aes(colour = CMTE_PTY_AFFILIATION))
+    
 
