@@ -6,29 +6,59 @@ setwd("~/R Working Directory/Election_Data")
 rm(list=ls())
 
 #Uploads a data frame of all of the candidates
-cand <- read.table("cn.txt",header = F, sep = "|",comment.char = "",stringsAsFactors = F,quote = "")
+download.file("http://www.fec.gov/finance/disclosure/metadata/cn_header_file.csv", "cn_header_file.csv")
+temp <- tempfile()
+download.file("ftp://ftp.fec.gov/FEC/2016/cn16.zip", temp)
+cand <- read.table(unz(temp,"cn.txt"),header = F, sep = "|",comment.char = "",stringsAsFactors = F,quote = "")
+unlink(temp)
+rm(temp)
 names(cand) <- read.csv("cn_header_file.csv",header = F, stringsAsFactor = F)
 
 #Uploads a data frame of all the individual contributions to committees
+download.file("http://www.fec.gov/finance/disclosure/metadata/indiv_header_file.csv","indiv_header_file.csv")
+temp <- tempfile()
+download.file("ftp://ftp.fec.gov/FEC/2016/indiv16.zip", temp)
 indColClasses <- c(rep("character", 4), "numeric", rep("character",5), "numeric", rep("character", 3), "integer", rep("character",6))
-indContr <- read.table("itcont.txt", sep= "|", comment.char = "", stringsAsFactors = F, quote = "", colClasses = indColClasses)
+indContr <- read.table(unz(temp,"itcont.txt"), sep= "|", comment.char = "", stringsAsFactors = F, quote = "", colClasses = indColClasses)
 names(indContr) <- read.csv("indiv_header_file.csv", header = F, stringsAsFactor = F)
+unlink(temp)
+rm(temp)
 indContr$TRANSACTION_DT <- as.Date(indContr$TRANSACTION_DT,format = "%m%d%Y")
 
 #Uploads the contributions from committees to candidates
-comContr <- read.table("itpas2.txt", sep= "|", comment.char = "", stringsAsFactors = F, quote = "")
+download.file("http://www.fec.gov/finance/disclosure/metadata/pas2_header_file.csv", "pas2_header_file.csv")
+temp <- tempfile()
+download.file("ftp://ftp.fec.gov/FEC/2016/pas216.zip", temp)
+comContr <- read.table(unz(temp,"itpas2.txt"), sep= "|", comment.char = "", stringsAsFactors = F, quote = "")
+unlink(temp)
+rm(temp)
 names(comContr) <- read.csv("pas2_header_file.csv", header = F, stringsAsFactors = F)
 
 #Uploads the list of committees
-committee <- read.table("cm.txt", sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
+download.file("http://www.fec.gov/finance/disclosure/metadata/cm_header_file.csv","cm_header_file.csv")
+temp <- tempfile()
+download.file("ftp://ftp.fec.gov/FEC/2016/cm16.zip",temp)
+committee <- read.table(unz(temp,"cm.txt"), sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
+unlink(temp)
+rm(temp)
 names(committee) <- read.csv("cm_header_file.csv",header = F,stringsAsFactors = F)
 
 #Uploads candidate/committee linkage file
-linkage <- read.table("ccl.txt", sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
+download.file("http://www.fec.gov/finance/disclosure/metadata/ccl_header_file.csv","ccl_header_file.csv")
+temp <- tempfile()
+download.file("ftp://ftp.fec.gov/FEC/2016/ccl16.zip", temp)
+linkage <- read.table(unz(temp,"ccl.txt"), sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
+unlink(temp)
+rm(temp)
 names(linkage) <- read.csv("ccl_header_file.csv", header = F, stringsAsFactors = F)
 
 #Uploads change of funds between committees
-cm2cm <- read.table("itoth.txt", sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
+download.file("http://www.fec.gov/finance/disclosure/metadata/oth_header_file.csv", "oth_header_file.csv")
+temp <- tempfile()
+download.file("ftp://ftp.fec.gov/FEC/2016/oth16.zip", temp)
+cm2cm <- read.table(unz(temp,"itoth.txt"), sep = "|", comment.char = "", stringsAsFactors = F, quote = "")
+unlink(temp)
+rm(temp)
 names(cm2cm) <- read.csv("oth_header_file.csv", header = F, comment.char = "", stringsAsFactors = F, quote = "")
 
 #Select relevent rows from the committee table
