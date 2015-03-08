@@ -14,12 +14,13 @@ rm(list=ls())
 #rm(temp)
 
 #Place all items in this directory into a vector
-files <- dir('2015_1')[1:2]
+files <- dir('2015_1')
 
 #Create blank data frames to append to later
 filing <- data.frame()
 registrant <- data.frame()
 client <- data.frame()
+issues <- data.frame()
 
 #For each file, we will read and parse the XML data. Then we will read in 
 #basic filing information, and registrant information.
@@ -32,16 +33,11 @@ for (file in files){
     year <- xpathSApply(data, "/PublicFilings/Filing", function(x) xmlGetAttr(x,'Year'))
     received <- xpathSApply(data, "/PublicFilings/Filing", function(x) xmlGetAttr(x,'Received'))
     amount <- as.numeric(xpathSApply(data, "/PublicFilings/Filing", function(x) xmlGetAttr(x,'Amount')))
-    
-    reg <- do.call(rbind, xpathApply(data, "/PublicFilings/Filing", function(node) {
-        id <- xmlGetAttr(node, "ID")
-        xp <- "./Registrant"
-        registrant <- xpathSApply(node, xp, xmlGetAttr, 'RegistrantID')
-        data.frame(ID=id, RegistrantID=registrant, stringsAsFactors = FALSE)}))
-    
+    reg <- xpathSApply(data, "/PublicFilings/Filing/Registrant", function(x) xmlGetAttr(x,'RegistrantID'))
     clientID <- xpathSApply(data, '/PublicFilings/Filing/Client', function(x) xmlGetAttr(x, 'ClientID'))
     
-    temp <- cbind(reg,data.frame(Year = year, Amount = amount, ClientID = clientID, stringsAsFactors = F))
+    temp <- data.frame(FilingID = filingID, RegistrantID = reg,Year = year,
+                       Amount = amount, ClientID = clientID, stringsAsFactors = F)
     filing <- rbind(filing, temp)
     
     #Client Key data frame
@@ -69,13 +65,25 @@ for (file in files){
     dups <- duplicated(registrant[,c('RegistrantID', 'Name')])
     registrant <- registrant[!dups,]
     
-
+    #Issues Key data frame
+    itemp <- do.call(rbind, xpathApply(data, "/PublicFilings/Filing", function(node) {
+        id <- xmlGetAttr(node, "ID")
+        xp <- ".//Issue"
+        issueCode <- xpathSApply(node, xp, function(x) xmlGetAttr(x, 'Code'))
+        issueDesc <- xpathSApply(node, xp, xmlGetAttr, 'SpecificIssue')
+        if (length(issueCode)==0){
+            issueCode = NA
+            issueDesc = NA
+        }
+        
+        data.frame(FilingID=id, Type=issueCode, Description = issueDesc, stringsAsFactors = FALSE)}))
+    issues <- rbind(issues, itemp)
 }
 
 #Delete everything except data frames from memory
 remove(reg, ctemp, rtemp, temp, amount, data, file, files, filingID, 
                received, regAd, regName, regNum, year, clientCountry, clientDesc,
-       clientID, clientName, clientState, dups, cdups, regDesc)
+       clientID, clientName, clientState, dups, cdups, regDesc, itemp)
 
 by_registrant <- filing %>%
     group_by(RegistrantID) %>%
@@ -83,5 +91,5 @@ by_registrant <- filing %>%
     left_join(registrant) %>%
     arrange(desc(Amount))
 
-#Issues Key data frame
+
 
