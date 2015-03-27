@@ -173,3 +173,5 @@ cmGrpMoney <- cmGrpMoney %>%
     select(CMTE_ID, CMTE_NM, OnDate, Funds, FromCommittees, TotalRaised, SpentCommittees, SpentCandidates, TotalSpent)
 
 cmGrpMoney$CMTE_NM <- as.factor(cmGrpMoney$CMTE_NM)
+
+write.table(cmGrpMoney, 'cmGrpMoney.txt', col.names = F, row.names = F, sep = '|', quote = F)
