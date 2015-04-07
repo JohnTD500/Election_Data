@@ -1,10 +1,15 @@
 library(shiny)
-source('Election.R')
-shinyUI(fluidPage(
-    titlePanel('Election Data'),
-    sidebarPanel(
-        selectInput('committee', choice = levels(cmGrpMoney$CMTE_NM), label = 'Select a Committee')
-    ),
-    mainPanel('Plot', plotOutput('plot')
+require(rCharts)
 
-)))
+
+shinyUI(fluidPage(
+    titlePanel('PAC Fundraising vs. Spending'),
+    sidebarPanel(
+        selectizeInput('committee', choices = NULL, label = 'Search for a Committee')
+    ),
+    mainPanel(
+        showOutput("raised", 'morris')
+        )
+    )
+
+)
