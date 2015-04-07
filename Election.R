@@ -172,6 +172,18 @@ cmGrpMoney <- cmGrpMoney %>%
            TotalRaised = FromCommittees+Funds+ReceivedCandidates, TotalSpent = SpentCommittees+SpentCandidates) %>%
     select(CMTE_ID, CMTE_NM, OnDate, Funds, FromCommittees, TotalRaised, SpentCommittees, SpentCandidates, TotalSpent)
 
-cmGrpMoney$CMTE_NM <- as.factor(cmGrpMoney$CMTE_NM)
 
+
+check <- cmGrpMoney %>%
+    group_by(CMTE_ID) %>%
+    summarise(raised = sum(TotalRaised), spent = sum(TotalSpent)) %>%
+    filter(raised == 0 & spent == 0) %>%
+    select(CMTE_ID)
+
+check <- check$CMTE_ID
+
+cmGrpMoney <- cmGrpMoney[(!cmGrpMoney$CMTE_ID %in% check),]
+
+cmGrpMoney$CMTE_NM <- as.factor(cmGrpMoney$CMTE_NM)
 write.table(cmGrpMoney, 'cmGrpMoney.txt', col.names = F, row.names = F, sep = '|', quote = F)
+write.table(levels(cmGrpMoney$CMTE_NM), 'orgs.txt', col.names = F, row.names = F, sep = '|', quote = F)
