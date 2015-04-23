@@ -187,3 +187,6 @@ cmGrpMoney <- cmGrpMoney[(!cmGrpMoney$CMTE_ID %in% check),]
 cmGrpMoney$CMTE_NM <- as.factor(cmGrpMoney$CMTE_NM)
 write.table(cmGrpMoney, 'cmGrpMoney.txt', col.names = F, row.names = F, sep = '|', quote = F)
 write.table(levels(cmGrpMoney$CMTE_NM), 'orgs.txt', col.names = F, row.names = F, sep = '|', quote = F)
+
+
+
